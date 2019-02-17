@@ -11,10 +11,15 @@ set client_min_messages to warning;
 \set authenticator_pass `echo $DB_PASS`
 \set jwt_secret `echo $JWT_SECRET`
 \set quoted_jwt_secret '\'' :jwt_secret '\''
-
+\set minio_port `echo $MINIO_PORT`
+\set minio_host `echo $MINIO_HOST`
+\set minio_access_key `echo $MINIO_ACCESS_KEY`
+\set minio_secret_key `echo $MINIO_SECRET_KEY`
 
 \echo # Loading database definition
 begin;
+
+create language plpython3u;
 
 \echo # Loading dependencies
 -- functions for storing different settins in a table
@@ -25,12 +30,16 @@ begin;
 \ir libs/request/schema.sql
 -- functions for sending messages to RabbitMQ entities
 \ir libs/rabbitmq/schema.sql
+\ir libs/minio/schema.sql
 
 -- save app settings
 select settings.set('jwt_secret', :quoted_jwt_secret);
 select settings.set('jwt_lifetime', '3600');
 select settings.set('auth.default-role', 'webuser');
-
+select settings.set('minio_port', :'minio_port');
+select settings.set('minio_host', :'minio_host');
+select settings.set('minio_access_key', :'minio_access_key');
+select settings.set('minio_secret_key', :'minio_secret_key');
 
 \echo # Loading application definitions
 -- private schema where all tables will be defined

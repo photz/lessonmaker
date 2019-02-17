@@ -8,7 +8,10 @@ services:
   # use a separate database instance, like Amazon RDS, i.e. in production this section will be
   # commented and in the .env file you will specify the ip of your separate database instance
   db:
-    image: postgres:9.6
+    image: drills-postgres
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile
     ports:
       - "5432:5432"
     environment:
@@ -25,6 +28,12 @@ services:
       - DB_ANON_ROLE=${DB_ANON_ROLE}
       - DEVELOPMENT=${DEVELOPMENT}
       - JWT_SECRET=${JWT_SECRET}
+      - MINIO_PORT=${MINIO_PORT}
+      - MINIO_HOST=${MINIO_HOST}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      - minio
 
     volumes:
       - "./db/src:/docker-entrypoint-initdb.d"
@@ -47,6 +56,8 @@ services:
       - PGRST_MAX_ROWS=${MAX_ROWS} 
       - PGRST_PRE_REQUEST=${PRE_REQUEST}
       - PGRST_SERVER_PROXY_URI=${SERVER_PROXY_URI}
+    depends_on:
+      - db
 
   # OpenResty (Nginx + Lua) instance that sits in front of PostgREST.
   # All the requests coming into the system are first hitting this component.
@@ -103,3 +114,15 @@ services:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    volumes:
+      - "./minio-data:/data"
+      #- "/mnt/config:/root/.minio"
+    command: "server /data"
+      
