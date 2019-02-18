@@ -2,47 +2,59 @@ module Component where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
-
+import Effect.Aff (Aff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.Component.ChildPath as CP
+import Recorder as Recorder
+import Login as Login
+import Data.Maybe (Maybe(..))
+import Data.Either.Nested (Either2)
+import Data.Functor.Coproduct.Nested (Coproduct2)
 
-data Query a = ToggleState a
+data Query a = HandleLogin Login.Message a
+             | HandleRecorder Recorder.Message a
 
-type State = { on :: Boolean }
+type State = { token :: Maybe String }
 
-component :: forall m. H.Component HH.HTML Query Unit Void m
+type ChildQuery = Coproduct2 Recorder.Query Login.Query
+
+type ChildSlot = Either2 Unit Unit
+
+component :: H.Component HH.HTML Query Unit Void Aff
 component =
-  H.component
+  H.lifecycleParentComponent
     { initialState: const initialState
     , render
     , eval
     , receiver: const Nothing
+    , initializer: Nothing
+    , finalizer: Nothing
     }
   where
 
   initialState :: State
-  initialState = { on: false }
+  initialState = { token: Nothing }
 
-  render :: State -> H.ComponentHTML Query
+  render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
   render state =
     HH.div_
       [ HH.h1_
-          [ HH.text "Hello world!" ]
-      , HH.p_
-          [ HH.text "Why not toggle this button:" ]
-      , HH.button
-          [ HE.onClick (HE.input_ ToggleState) ]
-          [ HH.text
-              if not state.on
-              then "Don't push me"
-              else "I said don't push me!"
-          ]
+          [ HH.text "Drills" ]
+      , case state.token of
+            Nothing -> 
+              HH.slot' CP.cp2 unit Login.component unit (HE.input HandleLogin)
+            Just _ ->
+              HH.text "You are logged in!"
+      , HH.slot' CP.cp1 unit Recorder.component unit (HE.input HandleRecorder)
       ]
 
-  eval :: Query ~> H.ComponentDSL State Query Void m
+  eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void Aff
   eval = case _ of
-    ToggleState next -> do
-      _ <- H.modify (\state -> { on: not state.on })
+    HandleLogin (Login.GotToken token) next -> do
+      _ <- H.modify (_ { token = Just token })
+      pure next
+
+    HandleRecorder (Recorder.GotRecording blob) next -> do
       pure next

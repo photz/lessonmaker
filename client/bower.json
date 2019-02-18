@@ -12,6 +12,9 @@
     "purescript-halogen": "^4.0.0",
     "purescript-prelude": "^4.1.0",
     "purescript-console": "^4.1.0",
-    "purescript-effect": "^2.0.0"
+    "purescript-effect": "^2.0.0",
+    "purescript-affjax": "^7.0.2",
+    "purescript-simple-json": "^4.4.0",
+    "purescript-web-file": "^1.2.0"
   }
 }
