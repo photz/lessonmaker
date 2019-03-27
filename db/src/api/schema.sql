@@ -15,3 +15,29 @@ grant api to current_user; -- this is a workaround for RDS where the master user
 
 -- our endpoints
 \ir todos.sql
+
+
+create or replace view languages as 
+  select * from data.language;
+
+alter view languages owner to api;
+
+create or replace view drill_sections as
+  select * from data.drill_section;
+
+alter view drill_sections owner to api;
+
+create or replace view drills as
+  select * from data.drill;
+
+alter view drills owner to api;
+
+create function create_recording(
+  out recording_id int,
+  out presigned_url text
+) returns record language plpgsql as $f$
+begin
+  insert into data.recording default values returning id into recording_id;
+
+  presigned_url := minio.get_presigned_url('recordings'::text, recording_id::text);
+end $f$ security definer;

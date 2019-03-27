@@ -46,3 +46,13 @@ grant select, insert, update, delete on api.todos to webuser;
 -- anonymous users can only request specific columns from this view
 grant select (id, todo) on api.todos to anonymous;
 -------------------------------------------------------------------------------
+
+
+grant select on data.language to api;
+grant all on data.drill_section to api;
+grant all on data.drill to api;
+
+
+
+
+grant execute on function api.create_recording() to webuser;

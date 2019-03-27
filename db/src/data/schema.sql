@@ -12,3 +12,42 @@ set search_path = data, public;
 
 -- import our application models
 \ir todo.sql
+
+
+create table "language" (
+  code text primary key,
+  name text unique not null
+);
+
+create table recording (
+  id serial primary key,
+  created_by int not null references "user" default request.user_id(),
+  created_at timestamptz default now() not null
+);
+
+create table drill_section (
+  id serial primary key,
+  name text not null,
+  created_at timestamptz default now() not null,
+  created_by int not null references "user" default request.user_id(),
+  teacher_language text not null references "language" on delete cascade,
+  student_language text not null references "language" on delete cascade,
+  order_fixed boolean not null default false,
+  check (teacher_language <> student_language)
+);
+
+create table drill (
+  id serial primary key,
+  drill_section int not null references drill_section on delete cascade,
+  student_text text,
+  teacher_text text,
+  student_audio int references recording,
+  teacher_audio int references recording,
+  created_at timestamptz default now() not null,
+  created_by int not null references "user" default request.user_id(),
+  check (student_text notnull or student_audio notnull),
+  check (teacher_text notnull or teacher_audio notnull),
+  check (student_audio <> teacher_audio)
+);
+
+
