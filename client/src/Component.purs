@@ -12,6 +12,9 @@ import Login as Login
 import Data.Maybe (Maybe(..))
 import Data.Either.Nested (Either2)
 import Data.Functor.Coproduct.Nested (Coproduct2)
+import Api as Api
+import Effect.Console as Console
+import Minio as Minio
 
 data Query a = HandleLogin Login.Message a
              | HandleRecorder Recorder.Message a
@@ -57,4 +60,22 @@ component =
       pure next
 
     HandleRecorder (Recorder.GotRecording blob) next -> do
+      token <- H.gets _.token
+      case token of
+        Nothing -> pure unit
+        Just token -> do
+          (r :: Maybe CreateRecordingResp) <- H.liftAff $ Api.call token "create_recording" {}
+          case r of
+            Nothing ->
+              H.liftEffect $ Console.log "Parsing error"
+            Just x -> do
+              succ <- H.liftAff $ Minio.upload x.presigned_url blob
+              if succ
+                then H.liftEffect $ Console.log "Upload successful"
+                else H.liftEffect $ Console.log "Unable to upload recording"
       pure next
+
+type CreateRecordingResp =
+  { presigned_url :: String
+  , recording_id :: Int
+  }

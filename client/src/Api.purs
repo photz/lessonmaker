@@ -17,13 +17,15 @@ import Effect.Class.Console (log)
 import Record as R
 import Prim.Row as Row
 import Type.Prelude (class IsSymbol, RLProxy(RLProxy), SProxy(SProxy), reflectSymbol)
-
+import Debug.Trace as Debug
 
 type Session = { token :: String }
 
 singleton :: MediaType
 singleton = MediaType "application/vnd.pgrst.object+json"
       
+
+
 
 login :: String -> String -> Aff (Maybe String)
 login email password = do
@@ -44,8 +46,41 @@ login email password = do
           pure $ Just r.token
         Left e -> pure Nothing
 
+type RemoteProcedureName = String
 
+call :: forall a b
+        . JSON.ReadForeign a
+        => JSON.WriteForeign b
+        => String
+        -> RemoteProcedureName
+        -> b
+        -> Aff (Maybe a)
+call jwt procedureName args = do
+  res <- AX.request $ AX.defaultRequest { headers = headers
+                                        , url = url
+                                        , responseFormat = responseFormat
+                                        , content = content
+                                        , method = Left POST
+                                        }
+  case res.body of
+    Left err -> pure Nothing
+    Right succ ->
+      case JSON.readJSON succ of
+        Left e -> pure Nothing
+        Right r -> pure $ Just r
 
+    where
+      headers = [ ContentType $ MediaType "application/json"
+                , RequestHeader "Authorization" ("Bearer " <> jwt)
+                , Accept singleton 
+                ]
+
+      url = "/rest/rpc/" <> procedureName
+
+      responseFormat = ResponseFormat.string
+      
+      content = Just $ RequestBody.string $ JSON.writeJSON args
+                                          
 
 get :: forall a
        . JSON.ReadForeign a

@@ -15,6 +15,7 @@
     "purescript-effect": "^2.0.0",
     "purescript-affjax": "^7.0.2",
     "purescript-simple-json": "^4.4.0",
-    "purescript-web-file": "^1.2.0"
+    "purescript-web-file": "^1.2.0",
+    "purescript-debug": "^4.0.0"
   }
 }
