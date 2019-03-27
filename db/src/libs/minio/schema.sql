@@ -10,6 +10,7 @@ returns text language plpython3u as $$
   from minio import Minio
   from minio.error import ResponseError
   from datetime import timedelta
+  from urllib.parse import urlsplit, urlunsplit
 
   plan = plpy.prepare(
     '''select settings.get('minio_host') host, 
@@ -26,6 +27,10 @@ returns text language plpython3u as $$
 
   url = client.presigned_put_object(bucket_name,
                                     object_name,
-                                    expires=timedelta(hours=1))
-  return url
+                                    expires=timedelta(minutes=1))
+
+  scheme, netloc, path, query, fragment = urlsplit(url)
+
+  # Return a relative URL
+  return urlunsplit(('', '', path, query, fragment))
 $$;
